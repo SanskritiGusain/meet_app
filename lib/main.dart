@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:my_app/screens/role_selection_screen.dart';
-
 import 'package:my_app/splash_screen.dart';
 import 'package:my_app/providers/user_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:my_app/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,6 +32,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'APT App',
+     theme: AppTheme.lightTheme, 
       initialRoute: '/splash',
       routes: {
         '/splash': (context) => SplashScreen(isLoggedIn: isLoggedIn),

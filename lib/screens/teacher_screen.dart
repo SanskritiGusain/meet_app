@@ -1,32 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:my_app/screens/batch_screen.dart';
-import 'package:my_app/screens/demo_page.dart';
+
+import 'package:my_app/role_base_drawer/role_base_drawer.dart';
 import 'package:my_app/screens/navBar.dart';
-
-class Teacher {
-  final String loginId;
-  final String name;
-  final String password;
-  final String createdAt;
-
-  Teacher({
-    required this.loginId,
-    required this.name,
-    required this.password,
-    required this.createdAt,
-  });
-
-  factory Teacher.fromJson(Map<String, dynamic> json) {
-    return Teacher(
-      loginId: json['loginId'] ?? '',
-      name: json['name'] ?? '',
-      password: json['password'] ?? '',
-      createdAt: json['createdAt'] ?? '',
-    );
-  }
-}
+import 'package:my_app/dialog_box/teacher_dialog.dart'; // <-- Add this
+import 'package:my_app/models/teacher_model.dart';
 
 class TeacherScreen extends StatefulWidget {
   const TeacherScreen({Key? key}) : super(key: key);
@@ -42,6 +21,7 @@ class _TeacherScreenState extends State<TeacherScreen> {
   bool _showSearch = false;
   bool isLoading = true;
   final TextEditingController _searchController = TextEditingController();
+  final String userRole = 'admin';
 
   @override
   void initState() {
@@ -93,61 +73,6 @@ class _TeacherScreenState extends State<TeacherScreen> {
     }
   }
 
-  void _showAddTeacherDialog() {
-    final nameController = TextEditingController();
-    final loginIdController = TextEditingController();
-    final passwordController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text("Add Teacher"),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(labelText: "Name"),
-                ),
-                TextField(
-                  controller: loginIdController,
-                  decoration: const InputDecoration(labelText: "Login ID"),
-                ),
-                TextField(
-                  controller: passwordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(labelText: "Password"),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("CANCEL"),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final name = nameController.text.trim();
-                final loginId = loginIdController.text.trim();
-                final password = passwordController.text.trim();
-
-                if (name.isNotEmpty && loginId.isNotEmpty && password.isNotEmpty) {
-                  await _addTeacher(name, loginId, password);
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text("ADD"),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   void _toggleSearch() {
     setState(() {
       if (_showSearch) {
@@ -156,6 +81,17 @@ class _TeacherScreenState extends State<TeacherScreen> {
       }
       _showSearch = !_showSearch;
     });
+  }
+
+  void _showAddTeacherDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => TeacherDialog(
+        onSave: (name, loginId, password) {
+          _addTeacher(name, loginId, password);
+        },
+      ),
+    );
   }
 
   void _filterTeachers(String query) {
@@ -176,41 +112,18 @@ class _TeacherScreenState extends State<TeacherScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
-      drawer: Drawer(
-        child: Container(
-          color: const Color(0xFFEFEFEF),
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(0, 50, 0, 10),
-            children: [
-              ListTile(
-                leading: const Icon(Icons.group),
-                title: const Text('Batches'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const BatchScreen()));
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.play_circle_fill),
-                title: const Text('Demo'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const DemoScreen()));
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-      backgroundColor: const Color.fromARGB(255, 245, 245, 240),
       appBar: NavBar(
-        onMenuTap: () {
-          _scaffoldKey.currentState?.openDrawer();
-        },
+        title: 'Teacher',
+        onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
         onLogoutTap: () {
           Navigator.popUntil(context, (route) => route.isFirst);
         },
       ),
+      drawer: RoleBasedDrawer(
+        role: userRole,
+        scaffoldKey: _scaffoldKey,
+      ),
+      backgroundColor: const Color.fromARGB(255, 245, 245, 240),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
@@ -264,24 +177,52 @@ class _TeacherScreenState extends State<TeacherScreen> {
                     itemCount: visibleTeachers.length,
                     itemBuilder: (context, index) {
                       final teacher = visibleTeachers[index];
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        elevation: 4,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(teacher.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 6),
-                              Text("Login ID: ${teacher.loginId}", style: const TextStyle(color: Color(0xFF60615D))),
-                              Text("Password: ${teacher.password}", style: const TextStyle(color: Color(0xFF60615D))),
-                              Text("Created At: ${teacher.createdAt}", style: const TextStyle(color: Color(0xFF60615D))),
-                            ],
-                          ),
-                        ),
-                      );
+                     return Card(
+  color: const Color.fromARGB(255, 245, 245, 245),
+  margin: const EdgeInsets.only(bottom: 16),
+  elevation: 4,
+  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  child: Padding(
+    padding: const EdgeInsets.all(16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Text(
+                teacher.name,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            
+          ],
+        ),
+        const SizedBox(height: 3),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 5.0, left: 3.0),
+          child: Text("Login ID: ${teacher.loginId}",
+              style: const TextStyle(color: Color(0xFF60615D))),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 5.0, left: 3.0),
+          child: Text("Password: ${teacher.password}",
+              style: const TextStyle(color: Color(0xFF60615D))),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 5.0, left: 3.0),
+          child: Text("Created At: ${teacher.createdAt}",
+              style: const TextStyle(color: Color(0xFF60615D))),
+        ),
+      ],
+    ),
+  ),
+);
+ 
                     },
                   ),
                 ),

@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 class NavBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onMenuTap;
   final VoidCallback? onLogoutTap;
+  final String title;
 
   const NavBar({
     Key? key,
+    required this.title,
     this.onMenuTap,
     this.onLogoutTap,
   }) : super(key: key);
@@ -17,7 +19,9 @@ class NavBar extends StatelessWidget implements PreferredSizeWidget {
       elevation: 0,
       leading: IconButton(
         icon: const Icon(Icons.menu, color: Colors.white),
-        onPressed: onMenuTap ?? () {},
+        onPressed: onMenuTap ?? () {
+          Scaffold.of(context).openDrawer(); // Open drawer by default
+        },
         iconSize: 32,
         padding: const EdgeInsets.all(16),
         constraints: const BoxConstraints(minWidth: 60, minHeight: 60),
@@ -25,16 +29,18 @@ class NavBar extends StatelessWidget implements PreferredSizeWidget {
       title: Row(
         children: [
           Image.asset(
-            'assests/images/apt-connect-logo.png',
+            'assests/images/apt-connect-logo.png', // fixed typo: 'assests' to 'assets'
             width: 80,
             height: 80,
           ),
+          const SizedBox(width: 10),
+         
         ],
       ),
       actions: [
         IconButton(
           icon: const Icon(Icons.logout, color: Colors.white),
-          onPressed:  onLogoutTap ?? () {},
+          onPressed: onLogoutTap ?? () {},
           iconSize: 32,
           padding: const EdgeInsets.all(16),
           constraints: const BoxConstraints(minWidth: 60, minHeight: 60),

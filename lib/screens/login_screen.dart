@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:my_app/screens/batch_screen.dart';
-import 'package:my_app/screens/dashboard.dart';
+import 'package:my_app/screens/dashboard_screen.dart';
 
 
 class LoginScreen extends StatefulWidget {
@@ -64,8 +64,7 @@ Future<void> _login() async {
       body: jsonEncode(body),
     );
 
-      print('STATUS: ${response.statusCode}');
-    print('BODY: ${response.body}');
+    
 
   final data = jsonDecode(response.body);
 
