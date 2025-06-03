@@ -32,6 +32,8 @@ dependencies:
      sdk: flutter
   
   permission_handler: ^11.3.0
+  jitsi_meet_flutter_sdk: ^10.3.0
+
   http: ^1.0.0
   fluttertoast: ^8.2.12
   shimmer: ^3.0.0
