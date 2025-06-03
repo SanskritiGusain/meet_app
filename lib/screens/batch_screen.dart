@@ -6,6 +6,8 @@ import 'package:my_app/models/batch_model.dart';
 import 'package:my_app/dialog_box/batch_dialog.dart';
 import 'package:my_app/screens/navBar.dart';
 import 'package:my_app/role_base_drawer/role_base_drawer.dart';
+import 'package:jitsi_meet_flutter_sdk/jitsi_meet_flutter_sdk.dart';
+
 
 class BatchScreen extends StatefulWidget {
   const BatchScreen({super.key});
@@ -23,13 +25,41 @@ class _BatchScreenState extends State<BatchScreen> {
   final TextEditingController _searchController = TextEditingController();
   final String userRole = 'teacher';
 
+late JitsiMeet _jitsiMeet;
+
+Map<String, dynamic> configOverwrite = {
+  "startWithVideoMuted": false,
+  "startWithAudioMuted": false,
+  "disableInviteFunctions": true,
+  "authenticationDomain": "meeting.apt.shiksha",
+  "tokenAuth": true,
+  "resolution": 360,
+   "startScreenSharing": true,
+   "disableReactions": true,
+   
+};
 
 
-  @override
-  void initState() {
-    super.initState();
-    fetchBatches();
-  }
+@override
+void initState() {
+  super.initState();
+  _jitsiMeet = JitsiMeet();
+   fetchBatches(); 
+}
+Future<void> joinMeeting(String roomName, String token, String displayName, String email) async {
+  var options = JitsiMeetConferenceOptions(
+    room: roomName,
+    configOverrides: configOverwrite,
+    userInfo: JitsiMeetUserInfo(
+      displayName: displayName,
+      email: email,
+    ),
+    token: token,
+  );
+
+  await _jitsiMeet.join(options);
+}
+
 
   Future<void> fetchBatches() async {
    const url = 'https://meet-api.apt.shiksha/api/Batches?filter={"order": "createdAt DESC"}';
@@ -237,7 +267,16 @@ class _BatchScreenState extends State<BatchScreen> {
                                       children: [
                                         Expanded(
                                           child: ElevatedButton.icon(
-                                            onPressed: () => {},
+onPressed: () {
+  final roomName = "Web___Developer ";
+  final token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJtZWV0aW5nLmFwdC5zaGlrc2hhIiwiaXNzIjoibWVldGluZy5hcHQuc2hpa3NoYSIsInN1YiI6IioiLCJyb29tIjoiKiIsImV4cCI6MTc0OTAwNTU4OTM0NiwibW9kZXJhdG9yIjp0cnVlLCJjb250ZXh0Ijp7InVzZXIiOnsibmFtZSI6InJhaml2IHJhbmphbiIsIm1vZGVyYXRvciI6InRydWUiLCJyb2xlIjoidGVhY2hlciIsImlkIjoiNjJkNTI4YTUwN2E1OGI0NTE5YjEwOWMxIn19LCJpYXQiOjE3NDg5MTkxODl9.D-8Tt1yP_8KaglGrqGWhbXZ5_N77l9Km97YnBe7nHx8";
+  final displayName = "rajiv ranjan";
+  final email = "rajiv.ranjan@apt.shiksha"; // Add this if available, otherwise use an empty string or placeholder.
+
+  joinMeeting(roomName, token, displayName, email);
+},
+
+
                                             icon: const Icon(Icons.play_arrow, color: Colors.white),
                                             label: const Text(
                                               "Start Class",
