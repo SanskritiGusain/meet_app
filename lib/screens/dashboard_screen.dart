@@ -1,91 +1,107 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:my_app/screens/batch_screen.dart';
-
 import 'package:my_app/screens/teacher_screen.dart';
 import 'package:my_app/screens/navBar.dart';
-import 'package:my_app/role_base_drawer/role_base_drawer.dart'; // <-- import this
+import 'package:my_app/role_base_drawer/role_base_drawer.dart';
 
 class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
-
+  final String userRole;
+  
+  const DashboardPage({
+    Key? key, 
+    required this.userRole
+  }) : super(key: key);
+ 
   @override
-  State<DashboardPage> createState() => _DashboardPageState();
+  _DashboardPageState createState() => _DashboardPageState();
 }
 
 class _DashboardPageState extends State<DashboardPage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-
-  // 🔐 Role (this can be fetched from login/session later)
-  String userRole = 'admin';
-
+  
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      key: _scaffoldKey,
-
-      // ✅ Use RoleBasedDrawer here
-      drawer: RoleBasedDrawer(
-        role: userRole,
-        scaffoldKey: _scaffoldKey,
-      ),
-
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(kToolbarHeight),
-        child: NavBar(
-          title: 'Dashboard',
-          onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
-          onLogoutTap: () {
-            Navigator.popUntil(context, (route) => route.isFirst);
-          },
-        ),
-      ),
-
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            _buildDashboardCard(
-              context,
-              label: 'Teachers',
-              color: Colors.orange.shade100,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const TeacherScreen()),
-                );
-              },
+    bool isAdmin = widget.userRole.toLowerCase() == 'admin';
+    
+    return PopScope(
+      canPop: !isAdmin, // Admin cannot pop normally
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
+        
+        if (isAdmin) {
+          // Show confirmation dialog for admin
+          final shouldExit = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Exit App'),
+              content: const Text('Do you want to close the application?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Exit'),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            _buildDashboardCard(
-              context,
-              label: 'Batches',
-              color: Colors.purple.shade100,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const BatchScreen()),
-                );
-              },
-            ),
-          ],
+          );
+          
+          if (shouldExit == true) {
+            SystemNavigator.pop();
+          }
+        }
+      },
+      child: Scaffold(
+        key: _scaffoldKey,
+        drawer: RoleBasedDrawer(
+          role: widget.userRole,
+          scaffoldKey: _scaffoldKey,
         ),
-      ),
-
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Add Teacher logic here
-        },
-        tooltip: 'Add Teacher',
-        backgroundColor: const Color.fromARGB(255, 32, 32, 31),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(30),
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(kToolbarHeight),
+          child: NavBar(
+            title: 'Dashboard',
+            onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
+          ),
         ),
-        child: const Icon(Icons.add, size: 35, color: Colors.white),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _buildDashboardCard(
+                context,
+                label: 'Teachers',
+                color: Colors.orange.shade100,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => TeacherScreen(userRole: widget.userRole)),
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+              _buildDashboardCard(
+                context,
+                label: 'Batches',
+                color: Colors.purple.shade100,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => BatchScreen(userRole: widget.userRole)),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
-
+  
   Widget _buildDashboardCard(BuildContext context,
       {required String label,
       required Color color,

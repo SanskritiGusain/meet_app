@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:my_app/screens/batch_screen.dart';
 import 'package:my_app/screens/dashboard_screen.dart';
-
 
 class LoginScreen extends StatefulWidget {
   final String role; // 'teacher' or 'admin'
@@ -24,7 +24,6 @@ Future<void> _login() async {
   final loginId = _loginIdController.text.trim();
   final password = _passwordController.text;
   
-
   if (loginId.isEmpty || password.isEmpty) {
     setState(() {
       _error = "Login ID and Password are required.";
@@ -38,10 +37,8 @@ Future<void> _login() async {
   });
 
   try {
-
-   String url;
+    String url;
     Map<String, dynamic> body;
- 
  
     if (widget.role.toLowerCase() == 'admin') {
       url = 'https://meet-api.apt.shiksha/api/Admins/login';
@@ -58,27 +55,54 @@ Future<void> _login() async {
       };
     }
 
- final response = await http.post(
+    final response = await http.post(
       Uri.parse(url),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(body),
     );
 
-    
+    final data = jsonDecode(response.body);
 
-  final data = jsonDecode(response.body);
-
-   if (response.statusCode == 200 &&
+    if (response.statusCode == 200 &&
         (data['message']?.toLowerCase().contains('success') ?? false || data['id'] != null)) {
+      
+      // Store authentication data
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Store token (check different possible token fields)
+      String? token = data['token'] ?? data['accessToken'] ?? data['authToken'];
+      if (token != null) {
+        await prefs.setString('auth_token', token);
+      } else if (data['id'] != null) {
+        // If no token field, use ID as temporary token
+        await prefs.setString('auth_token', data['id'].toString());
+      }
+      
+      // Store user information
+      if (data['id'] != null) {
+        await prefs.setString('user_id', data['id'].toString());
+      }
+      
+      await prefs.setString('user_role', widget.role);
+      await prefs.setBool('is_logged_in', true);
+      
+      // Store login timestamp for session management
+      await prefs.setInt('login_timestamp', DateTime.now().millisecondsSinceEpoch);
+      
+      // Navigate to respective screens
       if (widget.role.toLowerCase() == 'admin') {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const DashboardPage()),
+          MaterialPageRoute(
+            builder: (_) => DashboardPage(userRole: widget.role)
+          ),
         );
       } else {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => BatchScreen()),
+          MaterialPageRoute(
+            builder: (_) => BatchScreen(userRole: widget.role)
+          ),
         );
       }
     } else {
@@ -96,18 +120,17 @@ Future<void> _login() async {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor:Color.fromARGB(255, 253, 250, 250), // Soft pink background
+      backgroundColor: Color.fromARGB(255, 253, 250, 250),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 32.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Logo
-       Image.asset(
-      'assests/images/apt-connect-logo.png',
-      height: 30,
-    ),
+              Image.asset(
+                'assests/images/apt-connect-logo.png',
+                height: 30,
+              ),
               SizedBox(height: 30),
               Text(
                 "Login To Start Class",
@@ -115,19 +138,19 @@ Future<void> _login() async {
               ),
               SizedBox(height: 20),
               TextField(
-                style: TextStyle(fontSize: 12),
+                style: TextStyle(fontSize: 16),
                 controller: _loginIdController,
                 decoration: InputDecoration(
                   labelText: "Login ID *",
                   border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12), 
+                  contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12), 
                 ),
               ),
               SizedBox(height: 20),
               TextField(
                 controller: _passwordController,
                 obscureText: _obscurePassword,
-                style: TextStyle(fontSize: 12),
+                style: TextStyle(fontSize: 16),
                 decoration: InputDecoration(
                   labelText: "Password *",
                   border: OutlineInputBorder(),
@@ -143,9 +166,22 @@ Future<void> _login() async {
                   ),
                 ),
               ),
-              SizedBox(height: 50),
               if (_error != null)
-                Text(_error!, style: TextStyle(color: Colors.red)),
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Align(
+                    alignment: Alignment.center,
+                    child: Text(
+                      _error!, 
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+              SizedBox(height: 50),
               _loading
                   ? CircularProgressIndicator()
                   : SizedBox(
@@ -156,8 +192,8 @@ Future<void> _login() async {
                           backgroundColor: Colors.black,
                           foregroundColor: Color.fromARGB(255, 253, 250, 250),
                           shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12), // Adjust this for more or less curve
-    ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                         onPressed: _login,
                         child: Text("ENTER"),

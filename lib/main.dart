@@ -1,3 +1,4 @@
+// main.dart
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:my_app/screens/role_selection_screen.dart';
@@ -32,11 +33,12 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'APT App',
-     theme: AppTheme.lightTheme, 
+      theme: AppTheme.lightTheme, 
       initialRoute: '/splash',
       routes: {
         '/splash': (context) => SplashScreen(isLoggedIn: isLoggedIn),
         '/role-select': (context) => RoleSelectionScreen(),
+        // Add other routes as needed
       },
     );
   }
